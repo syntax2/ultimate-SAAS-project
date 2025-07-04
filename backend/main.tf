@@ -5,6 +5,13 @@ terraform {
       version = "~> 5.0"
     }
   }
+
+  backend "s3" {
+    bucket         = "demo-ashish-terraform-eks-state-file"
+    key            = "terraform.tfstate"
+    region         = "us-east-1"
+    dynamodb_table = "terraform-eks-state-lock"
+  }
 }
 
 # Configure the AWS Provider
@@ -13,21 +20,13 @@ provider "aws" {
 }
 
 # Create a VPC
-resource "aws_s3_bucket" "example" {
-  bucket = "demo-ashish-terraform-eks-state-file"
 
-  lifecycle {
-    prevent_destroy = false
-  }
+module "vpc" {
+  source = "./modules/vpc"
+
+  cluster_name          = var.cluster_name
+  vpc_cidr_block        = var.vpc_cidr_block
+  public_subnet_cidrs   = var.public_subnet_cidrs
+  private_subnet_cidrs  = var.private_subnet_cidrs
 }
 
-resource "aws_dynamodb_table" "basic-dynamodb-table" {
-  name           = "terraform-eks-state-lock"
-  billing_mode   = "PAY_PER_REQUEST"
-  hash_key       = "LockID"
-
-  attribute {
-    name = "LockID"
-    type = "S"
-  }
-}
